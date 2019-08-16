@@ -30,121 +30,93 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************<GINKGO LICENSE>*******************************/
 
-// @sect3{Include files}
-
-// This is the main ginkgo header file.
-#include <ginkgo/ginkgo.hpp>
-
-// Add the fstream header to read from data from files.
+#include <chrono>
 #include <fstream>
-// Add the C++ iostream header to output information to the console.
+#include <ginkgo/ginkgo.hpp>
 #include <iostream>
-// Add the string manipulation header to handle strings.
 #include <string>
 
+#define USE_SINGLE 1
+
+constexpr size_t runs_per_iter{4};
 
 int main(int argc, char *argv[])
 {
-    // Use some shortcuts. In Ginkgo, vectors are seen as a gko::matrix::Dense
-    // with one column/one row. The advantage of this concept is that using
-    // multiple vectors is a now a natural extension of adding columns/rows are
-    // necessary.
     using vec = gko::matrix::Dense<>;
-    // The gko::matrix::Csr class is used here, but any other matrix class such
-    // as gko::matrix::Coo, gko::matrix::Hybrid, gko::matrix::Ell or
-    // gko::matrix::Sellp could also be used.
     using mtx = gko::matrix::Csr<>;
-    // The gko::solver::Cg is used here, but any other solver class can also be
-    // used.
+
+    using bicgstab = gko::solver::Bicgstab<>;
     using cg = gko::solver::Cg<>;
+    using cgs = gko::solver::Cgs<>;
+    using gmres = gko::solver::Gmres<>;
 
-    // Print the ginkgo version information.
-    std::cout << gko::version_info::get() << std::endl;
+#if USE_SINGLE
+    constexpr size_t runs_per_exec{runs_per_iter};
+    constexpr size_t number_execs{1};
+#else
+    constexpr size_t runs_per_exec{1};
+    constexpr size_t number_execs{runs_per_iter};
+#endif
 
-    // @sect3{Where do you want to run your solver ?}
-    // The gko::Executor class is one of the cornerstones of Ginkgo. Currently,
-    // we have support for
-    // an gko::OmpExecutor, which uses OpenMP multi-threading in most of its
-    // kernels, a gko::ReferenceExecutor, a single threaded specialization of
-    // the OpenMP executor and a gko::CudaExecutor which runs the code on a
-    // NVIDIA GPU if available.
-    // @note With the help of C++, you see that you only ever need to change the
-    // executor and all the other functions/ routines within Ginkgo should
-    // automatically work and run on the executor with any other changes.
-    std::shared_ptr<gko::Executor> exec;
-    if (argc == 1 || std::string(argv[1]) == "reference") {
-        exec = gko::ReferenceExecutor::create();
-    } else if (argc == 2 && std::string(argv[1]) == "omp") {
-        exec = gko::OmpExecutor::create();
-    } else if (argc == 2 && std::string(argv[1]) == "cuda" &&
-               gko::CudaExecutor::get_num_devices() > 0) {
-        exec = gko::CudaExecutor::create(0, gko::OmpExecutor::create());
-    } else {
-        std::cerr << "Usage: " << argv[0] << " [executor]" << std::endl;
-        std::exit(-1);
+    constexpr size_t iter_num{20};
+    constexpr unsigned int solver_max_iter{10u};
+    constexpr double solver_max_res{1e-15};
+    std::string mtx_file1 =
+        "/home/thoasm/projects/ginkgo_github/matrices/test/ani4.mtx";
+    std::vector<double> vec_x1(3081, 1.0);
+    std::vector<double> vec_b1(3081, 2.0);
+
+    auto exec_omp = gko::OmpExecutor::create();
+
+    std::vector<std::shared_ptr<gko::Executor>> exec(number_execs);
+    std::vector<std::shared_ptr<mtx>> A(number_execs);
+    std::vector<std::shared_ptr<vec>> b(number_execs);
+    std::vector<std::shared_ptr<vec>> x(number_execs);
+    std::vector<std::shared_ptr<gko::LinOp>> solver(number_execs);
+
+    for (size_t i = 0; i < number_execs; ++i) {
+        exec[i] = gko::CudaExecutor::create(1, exec_omp);
+        A[i] = share(gko::read<mtx>(std::ifstream(mtx_file1), exec[i]));
+
+        auto b_array =
+            gko::Array<double>(exec[i], vec_b1.begin(), vec_b1.end());
+        b[i] =
+            vec::create(exec[i], gko::dim<2>(3081, 1), std::move(b_array), 1);
+        auto x_array =
+            gko::Array<double>(exec[i], vec_x1.begin(), vec_x1.end());
+        x[i] =
+            vec::create(exec[i], gko::dim<2>(3081, 1), std::move(x_array), 1);
+        auto solver_gen =
+            cg::build()
+                .with_criteria(gko::stop::Iteration::build()
+                                   .with_max_iters(solver_max_iter)
+                                   .on(exec[i]),
+                               gko::stop::ResidualNormReduction<>::build()
+                                   .with_reduction_factor(solver_max_res)
+                                   .on(exec[i]))
+                .on(exec[i]);
+        solver[i] = solver_gen->generate(A[i]);
     }
 
-    // @sect3{Reading your data and transfer to the proper device.}
-    // Read the matrix, right hand side and the initial solution using the @ref
-    // read function.
-    // @note Ginkgo uses C++ smart pointers to automatically manage memory. To
-    // this end, we use our own object ownership transfer functions that under
-    // the hood call the required smart pointer functions to manage object
-    // ownership. The gko::share , gko::give and gko::lend are the functions
-    // that you would need to use.
-    auto A = share(gko::read<mtx>(std::ifstream("data/A.mtx"), exec));
-    auto b = gko::read<vec>(std::ifstream("data/b.mtx"), exec);
-    auto x = gko::read<vec>(std::ifstream("data/x0.mtx"), exec);
+    for (size_t i = 0; i < exec.size(); ++i) {
+        exec[i]->synchronize();
+    }
 
-    // @sect3{Creating the solver}
-    // Generate the gko::solver factory. Ginkgo uses the concept of Factories to
-    // build solvers with certain
-    // properties. Observe the Fluent interface used here. Here a cg solver is
-    // generated with a stopping criteria of maximum iterations of 20 and a
-    // residual norm reduction of 1e-15. You also observe that the stopping
-    // criteria(gko::stop) are also generated from factories using their build
-    // methods. You need to specify the executors which each of the object needs
-    // to be built on.
-    auto solver_gen =
-        cg::build()
-            .with_criteria(
-                gko::stop::Iteration::build().with_max_iters(20u).on(exec),
-                gko::stop::ResidualNormReduction<>::build()
-                    .with_reduction_factor(1e-15)
-                    .on(exec))
-            .on(exec);
-    // Generate the solver from the matrix. The solver factory built in the
-    // previous step takes a "matrix"(a gko::LinOp to be more general) as an
-    // input. In this case we provide it with a full matrix that we previously
-    // read, but as the solver only effectively uses the apply() method within
-    // the provided "matrix" object, you can effectively create a gko::LinOp
-    // class with your own apply implementation to accomplish more tasks. We
-    // will see an example of how this can be done in the custom-matrix-format
-    // example
-    auto solver = solver_gen->generate(A);
+    auto start = std::chrono::high_resolution_clock::now();
+    for (size_t i = 0; i < iter_num; ++i) {
+        for (size_t r = 0; r < runs_per_exec; ++r) {
+            for (size_t ne = 0; ne < exec.size(); ++ne) {
+                solver[ne]->apply(gko::lend(b[ne]), gko::lend(x[ne]));
+            }
+        }
+    }
+    for (size_t i = 0; i < exec.size(); ++i) {
+        exec[i]->synchronize();
+    }
+    auto end = std::chrono::high_resolution_clock::now();
 
-    // Finally, solve the system. The solver, being a gko::LinOp, can be applied
-    // to a right hand side, b to
-    // obtain the solution, x.
-    solver->apply(lend(b), lend(x));
-
-    // Print the solution to the command line.
-    std::cout << "Solution (x): \n";
-    write(std::cout, lend(x));
-
-    // To measure if your solution has actually converged, you can measure the
-    // error of the solution.
-    // one, neg_one are objects that represent the numbers which allow for a
-    // uniform interface when computing on any device. To compute the residual,
-    // all you need to do is call the apply method, which in this case is an
-    // spmv and equivalent to the LAPACK z_spmv routine. Finally, you compute
-    // the euclidean 2-norm with the compute_norm2 function.
-    auto one = gko::initialize<vec>({1.0}, exec);
-    auto neg_one = gko::initialize<vec>({-1.0}, exec);
-    auto res = gko::initialize<vec>({0.0}, exec);
-    A->apply(lend(one), lend(x), lend(neg_one), lend(b));
-    b->compute_norm2(lend(res));
-
-    std::cout << "Residual norm sqrt(r^T r): \n";
-    write(std::cout, lend(res));
+    auto dur = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
+                   .count();
+    std::cout << "Time needed (on average) for " << number_execs
+              << " executor: " << dur / iter_num << " ns" << std::endl;
 }
