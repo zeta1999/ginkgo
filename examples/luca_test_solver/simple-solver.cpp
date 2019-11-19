@@ -41,6 +41,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 
 
+constexpr std::size_t number_of_rhs{100};
+
 using dense = gko::matrix::Dense<>;
 using csr = gko::matrix::Csr<>;
 using coo = gko::matrix::Coo<>;
@@ -135,8 +137,8 @@ int main(int argc, char *argv[])
     //*
     auto strategy = std::make_shared<csr::automatical>();
     /*/
-    auto strategy = std::make_shared<csr::load_balance>();
-    // auto strategy = std::make_shared<csr::classical>();
+    // auto strategy = std::make_shared<csr::load_balance>();
+    auto strategy = std::make_shared<csr::classical>();
     //*/
 
     // Print the ginkgo version information.
@@ -157,10 +159,14 @@ int main(int argc, char *argv[])
         std::cerr << "Usage: " << argv[0] << " [executor]" << std::endl;
         std::exit(-1);
     }
+    std::shared_ptr<gko::Executor> host_exec = exec->get_master();
 
     std::string location_matrices{
-        // "/home/thomas/projects/matrices/Downloaded/Matrices_Luca_Azzolin/"};
+        /*
+        "/home/thomas/projects/matrices/Downloaded/Matrices_Luca_Azzolin/"};
+        /*/
         "/home/thoasm/projects/matrices/luca_matrices/Matrices_Luca_Azzolin/"};
+    //*/
     std::vector<std::string> location_Ki = {
         location_matrices + "Reentry/Ki_reentries.mtx",
         location_matrices + "Repolarization_depolarization/Ki_one_beat.mtx",
@@ -187,9 +193,29 @@ int main(int argc, char *argv[])
         auto Ki = gko::read<csr>(std::ifstream(location_Ki[i]), exec, strategy);
         auto Mi = gko::share(
             gko::read<csr>(std::ifstream(location_Mi[i]), exec, strategy));
-        auto vm = gko::read<dense>(std::ifstream(location_vm[i]), exec);
+        auto vm_file =
+            gko::read<dense>(std::ifstream(location_vm[i]), host_exec);
+        auto vm_new = dense::create(
+            host_exec, gko::dim<2>{vm_file->get_size()[0], number_of_rhs});
+        auto vm = dense::create(exec);
         auto b = dense::create(
-            exec, gko::dim<2>(Ki->get_size()[0], vm->get_size()[1]));
+            exec, gko::dim<2>(Ki->get_size()[0], vm_new->get_size()[1]));
+
+        // Copy and duplicate the vector from file to have the desired number of
+        // right hand sides.
+        std::size_t num_rows{vm_file->get_size()[0]};
+        std::size_t old_num_rhs{vm_file->get_size()[1]};
+        std::size_t new_num_rhs{vm_new->get_size()[1]};
+        for (std::size_t i = 0; i < vm_new->get_size()[0]; ++i) {
+            std::size_t old_offset{i * old_num_rhs};
+            std::size_t new_offset{i * new_num_rhs};
+            for (std::size_t j = 0; j < vm_new->get_size()[1]; ++j) {
+                vm_new->get_values()[new_offset + j] =
+                    vm_file->get_values()[old_offset + j % old_num_rhs];
+            }
+        }
+
+        vm_new->move_to(vm.get());
 
         Ki->apply(lend(vm), lend(b));
         b->scale(lend(neg_one));
@@ -200,14 +226,17 @@ int main(int argc, char *argv[])
         using Fcg = gko::solver::Fcg<>;
         using Gmres = gko::solver::Gmres<>;
 
+        /*
         std::cout << "\n\nUsing BiCGSTAB for solving:\n\n" << std::flush;
         create_and_run_solver<Bicgstab>(exec, false, zero, neg_one, Mi, b);
         create_and_run_solver<Bicgstab>(exec, true, zero, neg_one, Mi, b);
+        //*/
 
         std::cout << "\n\nUsing CG for solving:\n\n" << std::flush;
         create_and_run_solver<Cg>(exec, false, zero, neg_one, Mi, b);
         create_and_run_solver<Cg>(exec, true, zero, neg_one, Mi, b);
 
+        /*
         std::cout << "\n\nUsing CGS for solving:\n\n" << std::flush;
         create_and_run_solver<Cgs>(exec, false, zero, neg_one, Mi, b);
         create_and_run_solver<Cgs>(exec, true, zero, neg_one, Mi, b);
@@ -219,5 +248,6 @@ int main(int argc, char *argv[])
         std::cout << "\n\nUsing GMRES for solving:\n\n" << std::flush;
         create_and_run_solver<Gmres>(exec, false, zero, neg_one, Mi, b);
         create_and_run_solver<Gmres>(exec, true, zero, neg_one, Mi, b);
+        //*/
     }
 }
