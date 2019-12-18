@@ -410,7 +410,7 @@ public:
     class automatical : public strategy_type {
     public:
         /**
-         * Creates a automatical strategy.
+         * Creates an automatical strategy.
          */
         automatical()
             : automatical(std::move(
@@ -418,28 +418,41 @@ public:
         {}
 
         /**
-         * Creates a automatical strategy with CUDA executor.
+         * Creates an automatical strategy tailored to the given executor.
          *
-         * @param exec the CUDA executor
+         * @param exec  the executor which provides vital information for the
+         *              for a good strategy decision.
          */
-        automatical(std::shared_ptr<const CudaExecutor> exec)
-            : automatical(exec->get_num_warps(), exec->get_warp_size())
-        {}
+        automatical(std::shared_ptr<const Executor> exec)
+            : strategy_type("automatical"),
+              nwarps_(0),
+              warp_size_(0),
+              cuda_strategy_(false),
+              max_length_per_row_(0)
 
-        /**
-         * Creates a automatical strategy with HIP executor.
-         *
-         * @param exec the HIP executor
-         */
-        automatical(std::shared_ptr<const HipExecutor> exec)
-            : automatical(exec->get_num_warps(), exec->get_warp_size(), false)
-        {}
+        {
+            auto cuda_exec = dynamic_cast<const CudaExecutor *>(exec.get());
+            if (cuda_exec) {
+                *this = automatical(cuda_exec->get_num_warps(),
+                                    cuda_exec->get_warp_size(), true);
+            } else {
+                auto hip_exec = dynamic_cast<const HipExecutor *>(exec.get());
+                if (hip_exec) {
+                    *this = automatical(hip_exec->get_num_warps(),
+                                        hip_exec->get_warp_size(), false);
+                }
+            }
+            // Default case already covered by this constructor
+            // TODO: Figure out what happens when this is copied from Reference
+            //       to CUDA! Maybe, the strategy is also copied or the old one
+            //       is used and not processed again in new environment!
+        }
 
         /**
          * Creates a automatical strategy with specified parameters
          *
-         * @param nwarps the number of warps in the executor
-         * @param warp_size the warp size of the executor
+         * @param nwarps  the number of warps in the executor
+         * @param warp_size  the warp size of the executor
          * @param cuda_strategy  whether the `cuda_strategy` needs to be used.
          *
          * @note The warp_size must be the size of full warp. When using this
