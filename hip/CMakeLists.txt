@@ -96,6 +96,7 @@ set(GINKGO_HIP_SOURCES
     base/version.hip.cpp
     components/prefix_sum.hip.cpp
     components/zero_array.hip.cpp
+    factorization/lu_kernels.hip.cpp
     factorization/par_ilu_kernels.hip.cpp
     matrix/coo_kernels.hip.cpp
     matrix/csr_kernels.hip.cpp

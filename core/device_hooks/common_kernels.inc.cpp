@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ginkgo/core/base/exception_helpers.hpp>
 
 
+#include "core/factorization/lu_kernels.hpp"
 #include "core/factorization/par_ilu_kernels.hpp"
 #include "core/matrix/coo_kernels.hpp"
 #include "core/matrix/csr_kernels.hpp"
@@ -790,6 +791,37 @@ GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(
 
 
 }  // namespace par_ilu_factorization
+
+
+namespace lu_factorization {
+
+
+template <typename ValueType, typename IndexType>
+GKO_DECLARE_LU_ADD_DIAGONAL_ELEMENTS_KERNEL(ValueType, IndexType)
+GKO_NOT_COMPILED(GKO_HOOK_MODULE);
+GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(
+    GKO_DECLARE_LU_ADD_DIAGONAL_ELEMENTS_KERNEL);
+
+template <typename ValueType, typename IndexType>
+GKO_DECLARE_LU_INITIALIZE_ROW_PTRS_L_U_KERNEL(ValueType, IndexType)
+GKO_NOT_COMPILED(GKO_HOOK_MODULE);
+GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(
+    GKO_DECLARE_LU_INITIALIZE_ROW_PTRS_L_U_KERNEL);
+
+template <typename ValueType, typename IndexType>
+GKO_DECLARE_LU_INITIALIZE_L_U_KERNEL(ValueType, IndexType)
+GKO_NOT_COMPILED(GKO_HOOK_MODULE);
+GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(
+    GKO_DECLARE_LU_INITIALIZE_L_U_KERNEL);
+
+template <typename ValueType, typename IndexType>
+GKO_DECLARE_LU_COMPUTE_L_U_FACTORS_KERNEL(ValueType, IndexType)
+GKO_NOT_COMPILED(GKO_HOOK_MODULE);
+GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(
+    GKO_DECLARE_LU_COMPUTE_L_U_FACTORS_KERNEL);
+
+
+}  // namespace lu_factorization
 
 
 namespace set_all_statuses {

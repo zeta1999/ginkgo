@@ -10,6 +10,7 @@ target_sources(ginkgo
         base/mtx_io.cpp
         base/perturbation.cpp
         base/version.cpp
+        factorization/lu.cpp
         factorization/par_ilu.cpp
         log/convergence.cpp
         log/logger.cpp
