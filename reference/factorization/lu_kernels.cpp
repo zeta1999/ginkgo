@@ -247,28 +247,28 @@ GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(
 
 template <typename ValueType, typename IndexType>
 void compute_l_u_factors(std::shared_ptr<const ReferenceExecutor> exec,
-                         const matrix::Coo<ValueType, IndexType> *system_matrix,
+                         const matrix::Csr<ValueType, IndexType> *system_matrix,
                          matrix::Csr<ValueType, IndexType> *l_factor,
                          matrix::Csr<ValueType, IndexType> *u_factor)
 {
-    auto iterations = 1;
     const auto col_idxs = system_matrix->get_const_col_idxs();
-    const auto row_idxs = system_matrix->get_const_row_idxs();
+    const auto row_ptrs = system_matrix->get_const_row_ptrs();
     const auto vals = system_matrix->get_const_values();
-    const auto row_ptrs_l = l_factor->get_const_row_ptrs();
-    const auto row_ptrs_u = u_factor->get_const_row_ptrs();
-    const auto col_idxs_l = l_factor->get_const_col_idxs();
-    const auto col_idxs_u = u_factor->get_const_col_idxs();
+    auto row_ptrs_l = l_factor->get_row_ptrs();
+    auto row_ptrs_u = u_factor->get_row_ptrs();
+    auto col_idxs_l = l_factor->get_col_idxs();
+    auto col_idxs_u = u_factor->get_col_idxs();
     auto vals_l = l_factor->get_values();
     auto vals_u = u_factor->get_values();
-    for (size_type iter = 0; iter < iterations; ++iter) {
-        for (size_type el = 0; el < system_matrix->get_num_stored_elements();
-             ++el) {
-            const auto row = row_idxs[el];
-            const auto col = col_idxs[el];
-            const auto val = vals[el];
+    for (size_type row = 0; row < system_matrix->get_size()[0]; ++row) {
+        for (size_type k = row_ptrs[row]; k < row_ptrs[row + 1]; ++k) {
+            const auto col = col_idxs[k];
+            const auto val = vals[k];
             auto row_l = row_ptrs_l[row];
             auto row_u = row_ptrs_u[col];
+            if (k == row) {
+                vals_l[row] = one<ValueType>();
+            }
             ValueType sum{val};
             ValueType last_operation{};
             while (row_l < row_ptrs_l[row + 1] && row_u < row_ptrs_u[col + 1]) {

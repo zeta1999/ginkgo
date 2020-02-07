@@ -111,76 +111,15 @@ std::unique_ptr<Composition<ValueType>> Lu<ValueType, IndexType>::generate_l_u(
 
     const auto matrix_size = csr_system_matrix->get_size();
     const auto number_rows = matrix_size[0];
-    Array<IndexType> l_row_ptrs{exec, number_rows + 1};
-    Array<IndexType> u_row_ptrs{exec, number_rows + 1};
-    exec->run(lu_factorization::make_initialize_row_ptrs_l_u(
-        csr_system_matrix, l_row_ptrs.get_data(), u_row_ptrs.get_data()));
 
-    IndexType l_nnz_it;
-    IndexType u_nnz_it;
-    // Since nnz is always at row_ptrs[m], it can be extracted easily
-    host_exec->copy_from(exec.get(), 1, l_row_ptrs.get_data() + number_rows,
-                         &l_nnz_it);
-    host_exec->copy_from(exec.get(), 1, u_row_ptrs.get_data() + number_rows,
-                         &u_nnz_it);
-    auto l_nnz = static_cast<size_type>(l_nnz_it);
-    auto u_nnz = static_cast<size_type>(u_nnz_it);
-
-    // Since `row_ptrs` of L and U is already created, the matrix can be
-    // directly created with it
-    Array<IndexType> l_col_idxs{exec, l_nnz};
-    Array<ValueType> l_vals{exec, l_nnz};
-    std::shared_ptr<CsrMatrix> l_factor = l_matrix_type::create(
-        exec, matrix_size, std::move(l_vals), std::move(l_col_idxs),
-        std::move(l_row_ptrs), l_strategy);
-    Array<IndexType> u_col_idxs{exec, u_nnz};
-    Array<ValueType> u_vals{exec, u_nnz};
-    std::shared_ptr<CsrMatrix> u_factor = u_matrix_type::create(
-        exec, matrix_size, std::move(u_vals), std::move(u_col_idxs),
-        std::move(u_row_ptrs), u_strategy);
-
-    exec->run(lu_factorization::make_initialize_l_u(
-        csr_system_matrix, l_factor.get(), u_factor.get()));
-
-    // We use `transpose()` here to convert the Csr format to Csc.
-    auto u_factor_transpose_lin_op = u_factor->transpose();
-    // Since `transpose()` returns an `std::unique_ptr<LinOp>`, we need to
-    // convert it to `u_matrix_type *` in order to use it.
-    auto u_factor_transpose =
-        static_cast<u_matrix_type *>(u_factor_transpose_lin_op.get());
-
-    // At first, test if the given system_matrix was already a Coo matrix,
-    // so no conversion would be necessary.
-    std::unique_ptr<CooMatrix> coo_system_matrix_unique_ptr{nullptr};
-    auto coo_system_matrix_ptr =
-        dynamic_cast<const CooMatrix *>(system_matrix.get());
-
-    // If it was not, and we already own a CSR `system_matrix`,
-    // we can move the Csr matrix to Coo, which has very little overhead.
-    // Otherwise, we convert from the Csr matrix, since it is the conversion
-    // with the least overhead.
-    // We also have to convert / move from the CSR matrix if it was not already
-    // sorted (in which case we definitively own a CSR `system_matrix`).
-    if (!skip_sorting || coo_system_matrix_ptr == nullptr) {
-        coo_system_matrix_unique_ptr = CooMatrix::create(exec);
-        if (csr_system_matrix_unique_ptr == nullptr) {
-            csr_system_matrix->convert_to(coo_system_matrix_unique_ptr.get());
-        } else {
-            csr_system_matrix_unique_ptr->move_to(
-                coo_system_matrix_unique_ptr.get());
-        }
-        coo_system_matrix_ptr = coo_system_matrix_unique_ptr.get();
-    }
+    // TODO : Need to set the csr strategies later
+    std::shared_ptr<CsrMatrix> l_factor =
+        l_matrix_type::create(exec, matrix_size);
+    std::shared_ptr<CsrMatrix> u_factor =
+        u_matrix_type::create(exec, matrix_size);
 
     exec->run(lu_factorization::make_compute_l_u_factors(
-        coo_system_matrix_ptr, l_factor.get(), u_factor_transpose));
-
-    // Transpose it again, which is basically a conversion from CSC back to CSR
-    // Since the transposed version has the exact same non-zero positions
-    // as `u_factor`, we can both skip the allocation and the `make_srow()`
-    // call from CSR, leaving just the `transpose()` kernel call
-    exec->run(lu_factorization::make_csr_transpose(u_factor.get(),
-                                                   u_factor_transpose));
+        csr_system_matrix, l_factor.get(), u_factor.get()));
 
     return Composition<ValueType>::create(std::move(l_factor),
                                           std::move(u_factor));
