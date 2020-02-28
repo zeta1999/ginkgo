@@ -47,7 +47,8 @@ version version_info::get_hip_version() noexcept
 
 
 std::shared_ptr<HipExecutor> HipExecutor::create(
-    int device_id, std::shared_ptr<Executor> master)
+    int device_id, std::shared_ptr<Executor> master,
+    bool reset_device_afterwards)
 {
     return std::shared_ptr<HipExecutor>(
         new HipExecutor(device_id, std::move(master)));

@@ -50,7 +50,8 @@ version version_info::get_cuda_version() noexcept
 
 
 std::shared_ptr<CudaExecutor> CudaExecutor::create(
-    int device_id, std::shared_ptr<Executor> master)
+    int device_id, std::shared_ptr<Executor> master,
+    bool reset_device_afterwards)
 {
     return std::shared_ptr<CudaExecutor>(
         new CudaExecutor(device_id, std::move(master)));

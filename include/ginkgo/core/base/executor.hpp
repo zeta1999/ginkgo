@@ -854,7 +854,8 @@ public:
      * kernels
      */
     static std::shared_ptr<CudaExecutor> create(
-        int device_id, std::shared_ptr<Executor> master);
+        int device_id, std::shared_ptr<Executor> master,
+        bool reset_device_afterwards = false);
 
     ~CudaExecutor() { decrease_num_execs(this->device_id_); }
 
@@ -1016,7 +1017,8 @@ public:
      *                kernels
      */
     static std::shared_ptr<HipExecutor> create(
-        int device_id, std::shared_ptr<Executor> master);
+        int device_id, std::shared_ptr<Executor> master,
+        bool reset_device_afterwards = false);
 
     ~HipExecutor() { decrease_num_execs(this->device_id_); }
 
