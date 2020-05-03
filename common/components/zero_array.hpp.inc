@@ -45,4 +45,30 @@ __global__ __launch_bounds__(default_block_size) void zero_array(
 }
 
 
+template <typename ValueType>
+__global__ __launch_bounds__(default_block_size) void zero_matrix(
+    size_type m, size_type n, size_type stride, ValueType *__restrict__ array)
+{
+    const auto tidx = thread::get_thread_id_flat();
+    if (tidx < n) {
+        auto pos = tidx;
+        for (size_type k = 0; k < m; ++k) {
+            array[pos] = zero<ValueType>();
+            pos += stride;
+        }
+    }
+}
+
+
+template <typename ValueType>
+__global__ __launch_bounds__(default_block_size) void one_array(
+    size_type n, ValueType *__restrict__ array)
+{
+    const auto tidx = thread::get_thread_id_flat();
+    if (tidx < n) {
+        array[tidx] = one<ValueType>();
+    }
+}
+
+
 }  // namespace kernel

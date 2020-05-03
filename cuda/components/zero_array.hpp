@@ -55,6 +55,14 @@ template <typename ValueType>
 void zero_array(size_type n, ValueType *array);
 
 
+template <typename ValueType>
+void zero_matrix(size_type m, size_type n, size_type stride, ValueType *array);
+
+
+template <typename ValueType>
+void one_array(size_type n, ValueType *array);
+
+
 }  // namespace cuda
 }  // namespace kernels
 }  // namespace gko

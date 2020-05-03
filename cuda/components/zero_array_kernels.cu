@@ -63,6 +63,39 @@ GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_ZERO_ARRAY);
 GKO_INSTANTIATE_FOR_EACH_INDEX_TYPE(GKO_DECLARE_ZERO_ARRAY);
 
 
+template <typename ValueType>
+void zero_matrix(size_type m, size_type n, size_type stride, ValueType *array)
+{
+    const dim3 block_size(default_block_size, 1, 1);
+    const dim3 grid_size(ceildiv(n, block_size.x), 1, 1);
+    kernel::zero_matrix<<<grid_size, block_size, 0, 0>>>(m, n, stride,
+                                                         as_cuda_type(array));
+}
+
+
+#define GKO_DECLARE_ZERO_MATRIX(_type)                                  \
+    void zero_matrix<_type>(size_type m, size_type n, size_type stride, \
+                            _type * array);
+GKO_INSTANTIATE_FOR_SIZE_TYPE(GKO_DECLARE_ZERO_MATRIX);
+GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_ZERO_MATRIX);
+GKO_INSTANTIATE_FOR_EACH_INDEX_TYPE(GKO_DECLARE_ZERO_MATRIX);
+
+template <typename ValueType>
+void one_array(size_type n, ValueType *array)
+{
+    const dim3 block_size(default_block_size, 1, 1);
+    const dim3 grid_size(ceildiv(n, block_size.x), 1, 1);
+    kernel::one_array<<<grid_size, block_size, 0, 0>>>(n, as_cuda_type(array));
+}
+
+
+#define GKO_DECLARE_ONE_ARRAY(_type) \
+    void one_array<_type>(size_type n, _type * array);
+GKO_INSTANTIATE_FOR_SIZE_TYPE(GKO_DECLARE_ONE_ARRAY);
+GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_ONE_ARRAY);
+GKO_INSTANTIATE_FOR_EACH_INDEX_TYPE(GKO_DECLARE_ONE_ARRAY);
+
+
 }  // namespace cuda
 }  // namespace kernels
 }  // namespace gko
