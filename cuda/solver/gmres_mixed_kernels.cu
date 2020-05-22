@@ -550,12 +550,18 @@ void finish_arnoldi_CGS2(
     auto next_krylov_const_accessor = next_krylov_accessor.to_const();
 
     zero_array(dim_size[1], arnoldi_norm->get_values());
+    /*
     multidot_kernel<<<grid_size, block_size>>>(
         0, dim_size[0], dim_size[1],
         as_cuda_type(next_krylov_basis->get_const_values()), stride_next_krylov,
         as_cuda_accessor(next_krylov_const_accessor),
         // as_cuda_type(next_krylov_basis->get_const_values()),
         // stride_next_krylov,
+        as_cuda_type(arnoldi_norm->get_values()), 0, as_cuda_type(stop_status));
+    */
+    multinorm2_kernel<<<grid_size, block_size>>>(
+        dim_size[0], dim_size[1],
+        as_cuda_type(next_krylov_basis->get_const_values()), stride_next_krylov,
         as_cuda_type(arnoldi_norm->get_values()), 0, as_cuda_type(stop_status));
     // nrmP = norm(next_krylov_basis
 #ifdef TIMING
@@ -639,12 +645,26 @@ void finish_arnoldi_CGS2(
     auto start_3 = std::chrono::steady_clock::now();
 #endif
     zero_array(dim_size[1], arnoldi_norm->get_values() + dim_size[1]);
+    /*
     multidot_kernel<<<grid_size, block_size>>>(
         0, dim_size[0], dim_size[1],
         as_cuda_type(next_krylov_basis->get_const_values()), stride_next_krylov,
         as_cuda_accessor(next_krylov_const_accessor),
         as_cuda_type(arnoldi_norm->get_values() + dim_size[1]), 0,
         as_cuda_type(stop_status));
+    */
+    multinorm2_kernel<<<grid_size, block_size>>>(
+        dim_size[0], dim_size[1],
+        as_cuda_type(next_krylov_basis->get_const_values()), stride_next_krylov,
+        as_cuda_type(arnoldi_norm->get_values() + dim_size[1]), 0,
+        as_cuda_type(stop_status));
+    /*
+    multinorminf_kernel<<<grid_size, block_size>>>(
+        dim_size[0], dim_size[1],
+        as_cuda_type(next_krylov_basis->get_const_values()), stride_next_krylov,
+        as_cuda_type(arnoldi_norm->get_values() + 2 * dim_size[1]), 0,
+        as_cuda_type(stop_status));
+    */
 #ifdef TIMING
     exec->synchronize();
     auto time_3 = std::chrono::steady_clock::now() - start_3;
@@ -733,12 +753,27 @@ void finish_arnoldi_CGS2(
         // end
         zero_array(dim_size[1],
                    arnoldi_norm->get_values() + dim_size[1] * (l - 1));
+        /*
         multidot_kernel<<<grid_size, block_size>>>(
             0, dim_size[0], dim_size[1],
             as_cuda_type(next_krylov_basis->get_const_values()),
             stride_next_krylov, as_cuda_accessor(next_krylov_const_accessor),
             as_cuda_type(arnoldi_norm->get_values() + dim_size[1] * (l - 1)), 0,
             as_cuda_type(stop_status));
+        */
+        multinorm2_kernel<<<grid_size, block_size>>>(
+            dim_size[0], dim_size[1],
+            as_cuda_type(next_krylov_basis->get_const_values()),
+            stride_next_krylov,
+            as_cuda_type(arnoldi_norm->get_values() + dim_size[1] * (l - 1)), 0,
+            as_cuda_type(stop_status));
+        /*
+        multinorminf_kernel<<<grid_size, block_size>>>(
+            dim_size[0], dim_size[1],
+            as_cuda_type(next_krylov_basis->get_const_values()),
+            as_cuda_type(arnoldi_norm->get_values() + 2*dim_size[1]), 0,
+            as_cuda_type(stop_status));
+        */
         // nrmN = norm(next_krylov_basis)
         zero_array<size_type>(1, num_reorth->get_data());
         check_arnoldi_norms<default_block_size>
