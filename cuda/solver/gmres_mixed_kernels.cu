@@ -739,9 +739,8 @@ void finish_arnoldi_CGS2(
         <<<ceildiv(dim_size[1], default_block_size), default_block_size>>>(
             as_cuda_type(arnoldi_norm->get_values()), stride_arnoldi,
             as_cuda_type(hessenberg_iter->get_values()), stride_hessenberg,
-            iter + 1, as_cuda_accessor(krylov_bases.to_const()),
-            as_cuda_type(stop_status), as_cuda_type(reorth_status),
-            as_cuda_type(num_reorth->get_data()));
+            iter + 1, as_cuda_accessor(krylov_bases), as_cuda_type(stop_status),
+            as_cuda_type(reorth_status), as_cuda_type(num_reorth->get_data()));
     /* */
 #ifdef TIMING
     exec->synchronize();
@@ -866,7 +865,7 @@ void finish_arnoldi_CGS2(
             <<<ceildiv(dim_size[1], default_block_size), default_block_size>>>(
                 as_cuda_type(arnoldi_norm->get_values()), stride_arnoldi,
                 as_cuda_type(hessenberg_iter->get_values()), stride_hessenberg,
-                iter + 1, as_cuda_accessor(krylov_bases.to_const()),
+                iter + 1, as_cuda_accessor(krylov_bases),
                 as_cuda_type(stop_status), as_cuda_type(reorth_status),
                 as_cuda_type(num_reorth->get_data()));
         /* */
