@@ -57,27 +57,24 @@ namespace kernels {  // TODO maybe put into another separate namespace
 namespace detail {
 
 
-using place_holder_type = float;
+// using place_holder_type = float;
 
 
 template <typename StorageType, typename ArithmeticType,
-          bool = (std::is_same<StorageType, place_holder_type>::value &&
+          bool = std::is_integral<StorageType>::value>
+/*          bool = (std::is_same<StorageType, place_holder_type>::value &&
                   !std::is_same<StorageType, ArithmeticType>::value) ||
                  std::is_integral<StorageType>::value>
-// bool = std::is_same<StorageType, place_holder_type>::value &&
-//        !std::is_same<StorageType, ArithmeticType>::value>
-struct helper_have_scale {
-};
+*/
+struct helper_have_scale {};
 
 template <typename StorageType, typename ArithmeticType>
 struct helper_have_scale<StorageType, ArithmeticType, false>
-    : public std::false_type {
-};
+    : public std::false_type {};
 
 template <typename StorageType, typename ArithmeticType>
 struct helper_have_scale<StorageType, ArithmeticType, true>
-    : public std::true_type {
-};
+    : public std::true_type {};
 
 
 }  // namespace detail
@@ -85,8 +82,7 @@ struct helper_have_scale<StorageType, ArithmeticType, true>
 
 template <typename StorageType, typename ArithmeticType,
           bool = detail::helper_have_scale<StorageType, ArithmeticType>::value>
-class Accessor3dConst {
-};
+class Accessor3dConst {};
 /**
  * @internal
  *
@@ -257,8 +253,7 @@ protected:
 
 template <typename StorageType, typename ArithmeticType,
           bool = detail::helper_have_scale<StorageType, ArithmeticType>::value>
-class Accessor3d : public Accessor3dConst<StorageType, ArithmeticType> {
-};
+class Accessor3d : public Accessor3dConst<StorageType, ArithmeticType> {};
 
 
 /**
@@ -402,8 +397,7 @@ public:
 
 template <typename ValueType, typename ValueTypeKrylovBases,
           bool = Accessor3d<ValueTypeKrylovBases, ValueType>::has_scale>
-class Accessor3dHelper {
-};
+class Accessor3dHelper {};
 
 
 template <typename ValueType, typename ValueTypeKrylovBases>
@@ -479,8 +473,7 @@ private:
 
 template <typename ValueType, typename KrylovType,
           bool = Accessor3d<KrylovType, ValueType>::has_scale>
-struct helper_functions_accessor {
-};
+struct helper_functions_accessor {};
 
 // Accessors having a scale
 template <typename ValueType, typename KrylovType>

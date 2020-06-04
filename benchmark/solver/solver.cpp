@@ -81,7 +81,8 @@ DEFINE_bool(overhead, false,
 
 
 // input validation
-[[noreturn]] void print_config_error_and_exit() {
+[[noreturn]] void print_config_error_and_exit()
+{
     std::cerr << "Input has to be a JSON array of matrix configurations:\n"
               << "  [\n"
               << "    { \"filename\": \"my_file.mtx\",  \"optimal\": { "
@@ -134,6 +135,10 @@ const std::map<std::string, std::function<std::unique_ptr<gko::LinOpFactory>(
                     create_solver<gko::solver::GmresMixed<double, float>>},
                    {"gmres_mixed_double",
                     create_solver<gko::solver::GmresMixed<double, double>>},
+                   {"gmres_mixed_int16",
+                    create_solver<gko::solver::GmresMixed<double, gko::int16>>},
+                   {"gmres_mixed_int32",
+                    create_solver<gko::solver::GmresMixed<double, gko::int32>>},
                    {"overhead", create_solver<gko::Overhead<>>}};
 
 
