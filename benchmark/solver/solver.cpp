@@ -65,12 +65,17 @@ DEFINE_string(solvers, "cg",
 
 DEFINE_string(preconditioners, "none",
               "A comma-separated list of preconditioners to use. "
-              "Supported values are: none, jacobi, adaptive-jacobi, parilu, "
-              "ilu, overhead");
+              "Supported values are: none, jacobi, adaptive-jacobi, jabobi-b1, "
+              "parilu, ilu, overhead");
 
 DEFINE_uint32(
     nrhs, 1,
     "The number of right hand sides. Record the residual only when nrhs == 1.");
+
+DEFINE_bool(
+    randomize_rhs, true,
+    "Randomize the right hand side for each solver if set to True (default "
+    "value). If set to False, the right hand side is set to all 1.");
 
 // This allows to benchmark the overhead of a solver by using the following
 // data: A=[1.0], x=[0.0], b=[nan]. This data can be used to benchmark normal
@@ -184,7 +189,7 @@ const std::map<std::string, std::function<std::unique_ptr<gko::LinOpFactory>(
                          return std::unique_ptr<ReferenceFactoryWrapper>(
                              new ReferenceFactoryWrapper(f));
                      }},
-                    {"jacobi_b1",
+                    {"jacobi-b1",
                      [](std::shared_ptr<const gko::Executor> exec) {
                          std::shared_ptr<const gko::LinOpFactory> f =
                              gko::preconditioner::Jacobi<>::build()
@@ -523,9 +528,17 @@ int main(int argc, char *argv[])
                 auto data = gko::read_raw<etype>(mtx_fd);
                 system_matrix = share(formats::matrix_factory.at(
                     test_case["optimal"]["spmv"].GetString())(exec, data));
-                b = create_matrix<etype>(
-                    exec, gko::dim<2>{system_matrix->get_size()[0], FLAGS_nrhs},
-                    engine);
+                if (FLAGS_randomize_rhs) {
+                    b = create_matrix<etype>(
+                        exec,
+                        gko::dim<2>{system_matrix->get_size()[0], FLAGS_nrhs},
+                        engine);
+                } else {
+                    b = create_matrix<etype>(
+                        exec,
+                        gko::dim<2>{system_matrix->get_size()[0], FLAGS_nrhs},
+                        gko::one<etype>());
+                }
                 x = create_matrix<etype>(
                     exec,
                     gko::dim<2>{system_matrix->get_size()[0], FLAGS_nrhs});
