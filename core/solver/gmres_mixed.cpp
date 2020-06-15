@@ -335,7 +335,7 @@ void GmresMixed<ValueType, ValueTypeKrylovBases>::apply_impl(const LinOp *b,
         restart_iter++;
     }
 
-        // Solve x
+    // Solve x
 #ifdef TIMING_STEPS
     exec->synchronize();
     auto t_aux_3 = std::chrono::steady_clock::now();
@@ -446,6 +446,7 @@ GKO_INSTANTIATE_FOR_EACH_MIXED_BOOL_TYPE(GKO_DECLARE_GMRES_MIXED_BOOL);
 */
 #define GKO_DECLARE_GMRES_MIXED(_type1, _type2) class GmresMixed<_type1, _type2>
 GKO_INSTANTIATE_FOR_EACH_GMRES_MIXED_TYPE(GKO_DECLARE_GMRES_MIXED);
+
 
 }  // namespace solver
 }  // namespace gko
