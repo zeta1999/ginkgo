@@ -594,6 +594,8 @@ void finish_arnoldi_CGS2(
     Array<size_type> *num_reorth, int *num_reorth_steps,
     int *num_reorth_vectors)
 {
+    // optimization parameter
+    constexpr int singledot_block_size = default_dot_dim;
     const auto stride_next_krylov = next_krylov_basis->get_stride();
     const auto stride_hessenberg = hessenberg_iter->get_stride();
     const auto stride_buffer = buffer_iter->get_stride();
@@ -614,7 +616,7 @@ void finish_arnoldi_CGS2(
     //       further investigation.
     const dim3 grid_size_iters_single(exec->get_num_multiprocessor() * 2,
                                       iter + 1);
-    const dim3 block_size_iters_single(default_block_size);
+    const dim3 block_size_iters_single(singledot_block_size);
     size_type numReorth;
 
     Accessor3d<ValueType, ValueType> next_krylov_accessor{
@@ -663,7 +665,7 @@ void finish_arnoldi_CGS2(
                 as_cuda_type(hessenberg_iter->get_values()), stride_hessenberg,
                 as_cuda_type(stop_status));
     } else {
-        singledot_kernel_num_iters_2<default_block_size>
+        singledot_kernel_num_iters_2<singledot_block_size>
             <<<grid_size_iters_single, block_size_iters_single>>>(
                 iter + 1, dim_size[0],
                 as_cuda_type(next_krylov_basis->get_const_values()),
@@ -832,7 +834,7 @@ void finish_arnoldi_CGS2(
                     as_cuda_type(buffer_iter->get_values()), stride_buffer,
                     as_cuda_type(stop_status));
         } else {
-            singledot_kernel_num_iters_2<default_block_size>
+            singledot_kernel_num_iters_2<singledot_block_size>
                 <<<grid_size_iters_single, block_size_iters_single>>>(
                     iter + 1, dim_size[0],
                     as_cuda_type(next_krylov_basis->get_const_values()),
