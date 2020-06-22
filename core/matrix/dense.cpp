@@ -210,8 +210,9 @@ inline void conversion_helper(SparsityCsr<ValueType, IndexType> *result,
 template <typename ValueType>
 void Dense<ValueType>::apply_impl(const LinOp *b, LinOp *x) const
 {
-    this->get_executor()->run(dense::make_simple_apply(
-        this, as<Dense<ValueType>>(b), as<Dense<ValueType>>(x)));
+    auto exec = this->get_executor()->get_sub_executor();
+    exec->run(dense::make_simple_apply(this, as<Dense<ValueType>>(b),
+                                       as<Dense<ValueType>>(x)));
 }
 
 
@@ -219,7 +220,8 @@ template <typename ValueType>
 void Dense<ValueType>::apply_impl(const LinOp *alpha, const LinOp *b,
                                   const LinOp *beta, LinOp *x) const
 {
-    this->get_executor()->run(dense::make_apply(
+    auto exec = this->get_executor()->get_sub_executor();
+    exec->run(dense::make_apply(
         as<Dense<ValueType>>(alpha), this, as<Dense<ValueType>>(b),
         as<Dense<ValueType>>(beta), as<Dense<ValueType>>(x)));
 }
@@ -233,7 +235,7 @@ void Dense<ValueType>::scale_impl(const LinOp *alpha)
         // different alpha for each column
         GKO_ASSERT_EQUAL_COLS(this, alpha);
     }
-    auto exec = this->get_executor();
+    auto exec = this->get_executor()->get_sub_executor();
     exec->run(dense::make_scale(as<Dense<ValueType>>(alpha), this));
 }
 
@@ -247,7 +249,7 @@ void Dense<ValueType>::add_scaled_impl(const LinOp *alpha, const LinOp *b)
         GKO_ASSERT_EQUAL_COLS(this, alpha);
     }
     GKO_ASSERT_EQUAL_DIMENSIONS(this, b);
-    auto exec = this->get_executor();
+    auto exec = this->get_executor()->get_sub_executor();
     exec->run(dense::make_add_scaled(as<Dense<ValueType>>(alpha),
                                      as<Dense<ValueType>>(b), this));
 }
