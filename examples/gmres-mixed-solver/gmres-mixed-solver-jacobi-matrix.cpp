@@ -57,9 +57,12 @@ int main(int argc, char *argv[])
     using mtx = gko::matrix::Csr<>;
     // The gko::solver::Cg is used here, but any other solver class can also be
     // used.
-    using gmres_mixed = gko::solver::GmresMixed<double, long int>;
+    // using gmres_mixed = gko::solver::GmresMixed<double, std::int8_t>;
+    // using gmres_mixed = gko::solver::GmresMixed<double, std::int16_t>;
+    // using gmres_mixed = gko::solver::GmresMixed<double, std::int32_t>;
+    // using gmres_mixed = gko::solver::GmresMixed<double, std::int64_t>;
     // using gmres_mixed = gko::solver::GmresMixed<double, float>;
-    // using gmres_mixed = gko::solver::GmresMixed<>;
+    using gmres_mixed = gko::solver::GmresMixed<>;
     using bj = gko::preconditioner::Jacobi<>;
 
     // Print the ginkgo version information.
@@ -180,22 +183,20 @@ int main(int argc, char *argv[])
             x = vec::create(exec, gko::dim<2>{sizesA[0], 1});
             for (int i = 0; i < sizesA[0]; i++) x->at(i) = 0.0;
         }
-        /**/
+        /* */
         if (std::string(argv[1]) == "cuda") {
-            /* */
             auto host_b =
                 vec::create(exec->get_master(), gko::dim<2>(sizesA[0], 1));
             for (auto i = 0; i < sizesA[0]; i++) {
                 host_b->at(i, 0) = 1.0;
             }
             b->copy_from(host_b.get());
-            /* */
             // b = gko::read<vec>(std::ifstream("data/one.mtx"), exec);
         } else {
             b = vec::create(exec, gko::dim<2>{sizesA[0], 1});
             for (int i = 0; i < sizesA[0]; i++) b->at(i) = 1.0;
         }
-        /**/
+        /* */
     }
     // std::cout << "Initilization is completed" << std::endl;
     // @sect3{Creating the solver}

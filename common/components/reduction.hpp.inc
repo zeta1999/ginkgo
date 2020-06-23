@@ -146,11 +146,22 @@ __device__ void multireduce(const Group &__restrict__ group,
                             size_type num, Operator reduce_op = Operator{})
 {
     const auto local_id = group.thread_rank();
-
+    /*
     for (int k = group.size() / 2; k >= config::warp_size; k /= 2) {
         group.sync();
         if (local_id < k) {
             for (int j = 0; j < num; j++) {
+                data[j * stride + local_id] =
+                    reduce_op(data[j * stride + local_id],
+                              data[j * stride + local_id + k]);
+            }
+        }
+    }
+    */
+    for (int j = 0; j < num; j++) {
+        for (int k = group.size() / 2; k >= config::warp_size; k /= 2) {
+            group.sync();
+            if (local_id < k) {
                 data[j * stride + local_id] =
                     reduce_op(data[j * stride + local_id],
                               data[j * stride + local_id + k]);

@@ -645,6 +645,89 @@ __global__ __launch_bounds__(block_size) void singledot_kernel_num_iters_2(
     }
 }
 
+#define CASE_SINGLE_NEW 0
+
+template <int dot_dim, typename ValueType, typename ValueTypeKrylovBases>
+__global__ __launch_bounds__(dot_dim) void singledot_kernel_num_iters_new(
+    size_type num_iters, size_type num_rows,
+    const ValueType *__restrict__ next_krylov_basis,
+    size_type stride_next_krylov,
+    Accessor3dConst<ValueTypeKrylovBases, ValueType> krylov_bases,
+    ValueType *__restrict__ hessenberg_iter, size_type stride_hessenberg,
+    const stopping_status *__restrict__ stop_status)
+{
+    /*
+     * In general in this kernel (thread indices appear to be col-major):
+     * grid_dim
+     *   x: for row_idx
+     *   y: for num_iters (number of krylov vectors)
+     * block_dim
+     *   x: for row_idx (must be block_size)
+     *   (y not used, must be set to 1 in dim)
+     */
+    const size_type tidx = threadIdx.x;
+    constexpr size_type col_idx{0};
+    const size_type num_rows_per_thread = ceildiv(num_rows, gridDim.x);
+#if CASE_SINGLE_NEW == 1
+    const size_type start_row = blockIdx.x * dot_dim + threadIdx.x;
+    const size_type incr_row = gridDim.x * dot_dim;
+    const auto end_row = num_rows;
+#else
+    const size_type start_row = blockIdx.x * num_rows_per_thread + threadIdx.x;
+    const size_type incr_row = dot_dim;
+    const auto end_row = min((blockIdx.x + 1) * num_rows_per_thread, num_rows);
+#endif
+
+    const size_type start_iters = dot_dim * blockIdx.y;
+    const size_type end_iters =
+        min((blockIdx.y + (size_type)1) * dot_dim, num_iters);
+    const size_type local_num_iters = end_iters - start_iters;
+    // Used that way to get around dynamic initialization warning and
+    // template error when using `reduction_helper_array` directly in `reduce`
+    __shared__ UninitializedArray<ValueType, dot_dim * dot_dim>
+        reduction_helper_array;
+    ValueType *__restrict__ reduction_helper = reduction_helper_array;
+
+    for (size_type j = 0; j < local_num_iters; j++) {
+        reduction_helper[j * dot_dim + tidx] = zero<ValueType>();
+    }
+    // ValueType local_res = zero<ValueType>();
+    if (!stop_status[col_idx].has_stopped()) {
+        for (size_type i = start_row; i < end_row; i += incr_row) {
+            const auto next_krylov_idx = i * stride_next_krylov + col_idx;
+            const auto next_krylov_value = next_krylov_basis[next_krylov_idx];
+            for (size_type j = 0, k = start_iters; j < dot_dim && k < end_iters;
+                 j++, k++) {
+                reduction_helper[j * dot_dim + tidx] +=
+                    next_krylov_value * krylov_bases.read(k, i, col_idx);
+            }
+        }
+    }
+    /*
+    if ((threadIdx.x == 0) && (blockIdx.x == 0) && (blockIdx.x == 0)) {
+        printf(
+            "num_rows_per_thread = %ld, start_row = %ld , end_row = %ld , "
+            "start_iters = %ld, end_iters = %ld\n",
+            num_rows_per_thread, start_row, end_row, start_iters, end_iters);
+        printf("num_iters = %ld , blockDim = (%d,%d) , gridDim = (%d,%d)\n",
+               num_iters, blockDim.x, blockDim.y, gridDim.x, gridDim.y);
+    }
+    */
+    // right hand side
+    __syncthreads();
+    // multireduce(group::this_thread_block(), reduction_helper, dot_dim,
+    // dot_dim,
+    multireduce(group::this_thread_block(), reduction_helper, dot_dim,
+                local_num_iters,
+                [](const ValueType &a, const ValueType &b) { return a + b; });
+    size_type k = start_iters + tidx;
+    if (k < num_iters) {
+        const auto hessenberg_idx = k * stride_hessenberg + col_idx;
+        atomic_add(hessenberg_iter + hessenberg_idx,
+                   reduction_helper[tidx * dot_dim]);
+    }
+}
+
 
 // Must be called with at least `num_rows * stride_next_krylov` threads in
 // total.
@@ -691,15 +774,17 @@ __global__
     if (row_idx < num_rows && col_idx < num_cols &&
         !stop_status[col_idx].has_stopped()) {
         const auto next_krylov_idx = row_idx * stride_next_krylov + col_idx;
+        ValueType local_res = zero<ValueType>();
         for (size_type k = 0; k < num_iters; ++k) {
             // const auto krylov_idx =
             //    row_idx * stride_krylov + k * num_cols + col_idx;
             const auto hessenberg_idx = k * stride_hessenberg + col_idx;
 
-            next_krylov_basis[next_krylov_idx] -=
-                hessenberg_iter[hessenberg_idx] *
-                krylov_bases.read(k, row_idx, col_idx);
+            // next_krylov_basis[next_krylov_idx] -=
+            local_res += hessenberg_iter[hessenberg_idx] *
+                         krylov_bases.read(k, row_idx, col_idx);
         }
+        next_krylov_basis[next_krylov_idx] -= local_res;
     }
 }
 

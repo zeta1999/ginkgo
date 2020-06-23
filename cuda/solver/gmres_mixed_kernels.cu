@@ -582,6 +582,7 @@ void finish_arnoldi_CGS(
 }
 /**/
 
+#define SINGLE_DOT 0
 
 template <typename ValueType, typename ValueTypeKrylovBases>
 void finish_arnoldi_CGS2(
@@ -597,6 +598,8 @@ void finish_arnoldi_CGS2(
 {
     // optimization parameter
     constexpr int singledot_block_size = default_dot_dim;
+    // constexpr int singledot_block_size = default_dot_dim * 2;
+    // constexpr int singledot_block_size = default_block_size;
     constexpr bool use_scale =
         Accessor3d<ValueTypeKrylovBases, ValueType>::has_scale;
     const auto stride_next_krylov = next_krylov_basis->get_stride();
@@ -620,6 +623,9 @@ void finish_arnoldi_CGS2(
     const dim3 grid_size_iters_single(exec->get_num_multiprocessor() * 2,
                                       iter + 1);
     const dim3 block_size_iters_single(singledot_block_size);
+    const dim3 grid_size_iters_single_new(exec->get_num_multiprocessor() * 2,
+                                          ceildiv((iter + 1), default_dot_dim));
+    const dim3 block_size_iters_single_new(default_dot_dim);
     size_type numReorth;
 
     Accessor3d<ValueType, ValueType> next_krylov_accessor{
@@ -656,9 +662,18 @@ void finish_arnoldi_CGS2(
         as_cuda_accessor(krylov_bases.to_const()),
         as_cuda_type(hessenberg_iter->get_values()), stride_hessenberg,
         as_cuda_type(stop_status));
-    /*/
+    */
     //    write(std::cout, krylov_bases);
     //    write(std::cout, next_krylov_basis);
+    /*
+    multidot_kernel_num_iters_1<<<grid_size_num_iters, block_size>>>(
+        iter + 1, dim_size[0], dim_size[1],
+        as_cuda_type(next_krylov_basis->get_const_values()), stride_next_krylov,
+        as_cuda_accessor(krylov_bases.to_const()),
+        as_cuda_type(hessenberg_iter->get_values()), stride_hessenberg,
+        as_cuda_type(stop_status));
+    */
+    /* */
     if (dim_size[1] > 1) {
         multidot_kernel_num_iters_2<default_dot_dim>
             <<<grid_size_num_iters_2, block_size>>>(
@@ -675,7 +690,23 @@ void finish_arnoldi_CGS2(
                 stride_next_krylov, as_cuda_accessor(krylov_bases.to_const()),
                 as_cuda_type(hessenberg_iter->get_values()), stride_hessenberg,
                 as_cuda_type(stop_status));
+        /* */
+        /*
+        std::cout << (iter + 1) << " - ";
+        std::cout << grid_size_iters_single_new.x << " - ";
+        std::cout << grid_size_iters_single_new.y << std::endl;
+        */
+        /*
+        singledot_kernel_num_iters_new<default_dot_dim>
+            <<<grid_size_iters_single_new, block_size_iters_single_new>>>(
+                iter + 1, dim_size[0],
+                as_cuda_type(next_krylov_basis->get_const_values()),
+                stride_next_krylov, as_cuda_accessor(krylov_bases.to_const()),
+                as_cuda_type(hessenberg_iter->get_values()), stride_hessenberg,
+                as_cuda_type(stop_status));
+        */
     }
+    /* */
     // */
     // exec->synchronize();
     // write(std::cout, hessenberg_iter);
@@ -702,6 +733,17 @@ void finish_arnoldi_CGS2(
             as_cuda_accessor(krylov_bases.to_const()),
             as_cuda_type(hessenberg_iter->get_const_values()),
             stride_hessenberg, as_cuda_type(stop_status));
+    /*
+    // update_next_krylov_kernel_num_iters_1<default_block_size>
+    //     <<<dim_size[0], default_block_size>>>(
+    update_next_krylov_kernel_num_iters_1<default_update_dim>
+        <<<dim_size[0] * stride_next_krylov, default_update_dim>>>(
+            iter + 1, dim_size[0], dim_size[1],
+            as_cuda_type(next_krylov_basis->get_values()), stride_next_krylov,
+            as_cuda_accessor(krylov_bases.to_const()),
+            as_cuda_type(hessenberg_iter->get_const_values()),
+            stride_hessenberg, as_cuda_type(stop_status));
+    */
 
 #ifdef TIMING
     exec->synchronize();
@@ -845,6 +887,17 @@ void finish_arnoldi_CGS2(
                     as_cuda_accessor(krylov_bases.to_const()),
                     as_cuda_type(buffer_iter->get_values()), stride_buffer,
                     as_cuda_type(stop_status));
+            /* */
+            /*
+            singledot_kernel_num_iters_new<default_dot_dim>
+                <<<grid_size_iters_single_new, block_size_iters_single_new>>>(
+                    iter + 1, dim_size[0],
+                    as_cuda_type(next_krylov_basis->get_const_values()),
+                    stride_next_krylov,
+                    as_cuda_accessor(krylov_bases.to_const()),
+                    as_cuda_type(buffer_iter->get_values()), stride_buffer,
+                    as_cuda_type(stop_status));
+            */
         }
         // for i in 1:iter
         //     hessenberg(iter, i) = next_krylov_basis' * krylov_bases(:, i)
