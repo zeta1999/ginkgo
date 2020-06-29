@@ -665,8 +665,8 @@ public:
                                                             Args &&... args)
     {
         GKO_ASSERT_MPI_EXEC(exec.get());
-        return std::unique_ptr<ConcreteType>(new ConcreteType(
-            exec->get_sub_executor(), std::forward<Args>(args)...));
+        return std::unique_ptr<ConcreteType>(
+            new ConcreteType(exec, std::forward<Args>(args)...));
     }
 
 

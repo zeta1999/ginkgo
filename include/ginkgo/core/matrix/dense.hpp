@@ -512,8 +512,7 @@ protected:
                                                        const dim<2> &size,
                                                        size_type stride)
     {
-        auto updated_exec = exec;
-        return Dense::create(updated_exec, size, stride);
+        return Dense::create(exec, size, stride);
     }
 
 
@@ -521,8 +520,7 @@ protected:
     static std::unique_ptr<Dense> distribute_data_impl(ExecType &exec,
                                                        const dim<2> &size)
     {
-        auto updated_exec = exec;
-        return Dense::create(updated_exec, size, size[1]);
+        return Dense::create(exec, size, size[1]);
     }
 
     /**
