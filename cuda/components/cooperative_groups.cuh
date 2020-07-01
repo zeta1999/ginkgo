@@ -317,10 +317,10 @@ template <typename Group>
 class enable_extended_shuffle : public Group {
 public:
     using Group::Group;
-    using Group::shfl;
-    using Group::shfl_down;
-    using Group::shfl_up;
-    using Group::shfl_xor;
+    // using Group::shfl;
+    // using Group::shfl_down;
+    // using Group::shfl_up;
+    // using Group::shfl_xor;
 
 #define GKO_ENABLE_SHUFFLE_OPERATION(_name, SelectorType)                   \
     template <typename ValueType>                                           \
@@ -369,10 +369,11 @@ private:
 // Implementing this as a using directive messes up with SFINAE for some reason,
 // probably a bug in NVCC. If it is a complete type, everything works fine.
 template <size_type Size>
-struct thread_block_tile : detail::enable_extended_shuffle<
-                               cooperative_groups::thread_block_tile<Size>> {
-    using detail::enable_extended_shuffle<
-        cooperative_groups::thread_block_tile<Size>>::enable_extended_shuffle;
+struct thread_block_tile
+    : detail::enable_extended_shuffle<cooperative_groups::thread_block_tile<
+          Size, cooperative_groups::thread_block>> {
+    using detail::enable_extended_shuffle<cooperative_groups::thread_block_tile<
+        Size, cooperative_groups::thread_block>>::enable_extended_shuffle;
 };
 // inherits thread_group
 //
@@ -458,11 +459,8 @@ __device__ __forceinline__ auto tiled_partition(const Group &g)
 // Reference:
 // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#warp-notes
 template <size_type Size, typename Group>
-__device__ __forceinline__ gko::xstd::enable_if_t<
-    (Size <= kernels::cuda::config::warp_size) && (Size > 0) &&
-        (kernels::cuda::config::warp_size % Size == 0),
-    thread_block_tile<Size>>
-tiled_partition(const Group &)
+__device__ __forceinline__ thread_block_tile<Size> tiled_partition(
+    const Group &)
 {
     return thread_block_tile<Size>();
 }
