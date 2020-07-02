@@ -37,6 +37,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cooperative_groups.h>
 
 
+#include <cuda.h>
+
+
 #include <ginkgo/core/base/std_extensions.hpp>
 
 
