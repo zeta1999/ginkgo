@@ -139,8 +139,8 @@ public:
         /**
          * Criterion factories.
          */
-        std::vector<std::shared_ptr<const stop::CriterionFactory>>
-            GKO_FACTORY_PARAMETER(criteria, nullptr);
+        GKO_FACTORY_PARAMETER_VECTOR(
+            criteria, std::shared_ptr<const stop::CriterionFactory>);
 
         /**
          * Preconditioner factory.

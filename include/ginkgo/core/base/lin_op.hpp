@@ -855,7 +855,6 @@ public:                                                                      \
                   "semi-colon warnings")
 
 
-#if !(defined(__CUDACC__) || defined(__HIPCC__))
 /**
  * Creates a factory parameter in the factory parameters structure.
  *
@@ -870,34 +869,62 @@ public:                                                                      \
     mutable _name{__VA_ARGS__};                                              \
                                                                              \
     template <typename... Args>                                              \
-    auto with_##_name(Args &&... _value)                                     \
+    auto with_##_name(decltype(_name) _value)                                \
         const->const ::gko::xstd::decay_t<decltype(*this)> &                 \
     {                                                                        \
         using type = decltype(this->_name);                                  \
-        this->_name = type{std::forward<Args>(_value)...};                   \
+        this->_name = std::move(_value);                                     \
         return *this;                                                        \
     }                                                                        \
     static_assert(true,                                                      \
                   "This assert is used to counter the false positive extra " \
                   "semi-colon warnings")
-#else  // defined(__CUDACC__) || defined(__HIPCC__)
-// A workaround for the NVCC compiler - parameter pack expansion does not work
-// properly. You won't be able to use factories in code compiled with NVCC, but
-// at least this won't trigger a compiler error as soon as a header using it is
-// included. To not get a linker error, we provide a dummy body.
-#define GKO_FACTORY_PARAMETER(_name, ...)                                    \
-    mutable _name{__VA_ARGS__};                                              \
+
+
+/**
+ * Creates a factory parameter in the factory parameters structure that is a
+ * vector of multiple elements (at most 3).
+ *
+ * @param _name  name of the parameter
+ * @param _type  type of each entry of the parameter
+ *
+ * @see GKO_ENABLE_LIN_OP_FACTORY for more details, and usage example
+ *
+ * @ingroup LinOp
+ */
+#define GKO_FACTORY_PARAMETER_VECTOR(_name, _type)                           \
+    std::vector<_type> mutable _name;                                        \
                                                                              \
-    template <typename... Args>                                              \
-    auto with_##_name(Args &&... _value)                                     \
+    auto with_##_name(std::vector<_type> arg)                                \
         const->const ::gko::xstd::decay_t<decltype(*this)> &                 \
     {                                                                        \
+        this->_name = std::move(arg);                                        \
+        return *this;                                                        \
+    }                                                                        \
+    auto with_##_name(_type arg)                                             \
+        const->const ::gko::xstd::decay_t<decltype(*this)> &                 \
+    {                                                                        \
+        this->_name.push_back(std::move(arg));                               \
+        return *this;                                                        \
+    }                                                                        \
+    auto with_##_name(_type arg1, _type arg2)                                \
+        const->const ::gko::xstd::decay_t<decltype(*this)> &                 \
+    {                                                                        \
+        this->_name.push_back(std::move(arg1));                              \
+        this->_name.push_back(std::move(arg2));                              \
+        return *this;                                                        \
+    }                                                                        \
+    auto with_##_name(_type arg1, _type arg2, _type arg3)                    \
+        const->const ::gko::xstd::decay_t<decltype(*this)> &                 \
+    {                                                                        \
+        this->_name.push_back(std::move(arg1));                              \
+        this->_name.push_back(std::move(arg2));                              \
+        this->_name.push_back(std::move(arg3));                              \
         return *this;                                                        \
     }                                                                        \
     static_assert(true,                                                      \
                   "This assert is used to counter the false positive extra " \
                   "semi-colon warnings")
-#endif  // defined(__CUDACC__) || defined(__HIPCC__)
 
 
 }  // namespace gko

@@ -67,8 +67,8 @@ public:
          * of pointers, so copying it when creating the factories should not be
          * too costly.
          */
-        std::vector<std::shared_ptr<const CriterionFactory>>
-            GKO_FACTORY_PARAMETER(criteria, nullptr);
+        GKO_FACTORY_PARAMETER_VECTOR(
+            criteria, std::shared_ptr<const stop::CriterionFactory>);
     };
     GKO_ENABLE_CRITERION_FACTORY(Combined, parameters, Factory);
     GKO_ENABLE_BUILD_METHOD(Factory);
