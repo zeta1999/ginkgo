@@ -106,7 +106,8 @@ xstd::enable_if_t<Accessor3d<Type1, Type2>::has_scale,
 as_cuda_accessor(Accessor3d<Type1, Type2> acc)
 {
     return {as_cuda_type(acc.get_storage()), acc.get_stride0(),
-            acc.get_stride1(), as_cuda_type(acc.get_scale())};
+            acc.get_stride1(), as_cuda_type(acc.get_scale()),
+            as_cuda_type(acc.get_invscale())};
 }
 
 template <typename Type1, typename Type2>
@@ -124,7 +125,8 @@ xstd::enable_if_t<Accessor3dConst<Type1, Type2>::has_scale,
 as_cuda_accessor(const Accessor3dConst<Type1, Type2> &acc)
 {
     return {as_cuda_type(acc.get_storage()), acc.get_stride0(),
-            acc.get_stride1(), as_cuda_type(acc.get_scale())};
+            acc.get_stride1(), as_cuda_type(acc.get_scale()),
+            as_cuda_type(acc.get_invscale())};
 }
 
 

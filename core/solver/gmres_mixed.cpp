@@ -51,7 +51,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "core/solver/gmres_mixed_kernels.hpp"
 
 
-//#define TIMING 1
+#define TIMING 1
 
 
 #ifdef TIMING

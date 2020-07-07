@@ -60,9 +60,9 @@ int main(int argc, char *argv[])
     // using gmres_mixed = gko::solver::GmresMixed<double, std::int8_t>;
     // using gmres_mixed = gko::solver::GmresMixed<double, std::int16_t>;
     // using gmres_mixed = gko::solver::GmresMixed<double, std::int32_t>;
-    // using gmres_mixed = gko::solver::GmresMixed<double, std::int64_t>;
+    using gmres_mixed = gko::solver::GmresMixed<double, std::int64_t>;
     // using gmres_mixed = gko::solver::GmresMixed<double, float>;
-    using gmres_mixed = gko::solver::GmresMixed<>;
+    // using gmres_mixed = gko::solver::GmresMixed<>;
     using bj = gko::preconditioner::Jacobi<>;
 
     // Print the ginkgo version information.

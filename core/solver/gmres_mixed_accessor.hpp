@@ -192,10 +192,12 @@ public:
      * is not invalid or UB code.
      */
     Accessor3dConst(const storage_type *storage, size_type stride0,
-                    size_type stride1, const arithmetic_type *scale)
+                    size_type stride1, const arithmetic_type *scale,
+                    const arithmetic_type *invscale)
         : storage_{const_cast<storage_type *>(storage)},
           stride_{stride0, stride1},
-          scale_{const_cast<arithmetic_type *>(scale)}
+          scale_{const_cast<arithmetic_type *>(scale)},
+          invscale_{const_cast<arithmetic_type *>(scale)}
     {}
 
     /**
@@ -206,6 +208,16 @@ public:
     {
         const arithmetic_type *GKO_RESTRICT rest_scale = scale_;
         return rest_scale[x * stride_[1] + z];
+    }
+
+    /**
+     * Reads the invscale value at the given indices.
+     */
+    template <typename IndexType>
+    GKO_ATTRIBUTES arithmetic_type read_invscale(IndexType x, IndexType z) const
+    {
+        const arithmetic_type *GKO_RESTRICT rest_invscale = invscale_;
+        return rest_invscale[x * stride_[1] + z];
     }
 
     /**
@@ -244,10 +256,21 @@ public:
         return this->scale_;
     }
 
+    GKO_ATTRIBUTES const arithmetic_type *get_invscale() const
+    {
+        return this->invscale_;
+    }
+
+    GKO_ATTRIBUTES const arithmetic_type *get_const_invscale() const
+    {
+        return this->invscale_;
+    }
+
 protected:
     storage_type *storage_;
     size_type stride_[2];
     arithmetic_type *scale_;
+    arithmetic_type *invscale_;
 };
 
 
@@ -336,21 +359,21 @@ public:
     /**
      * Creates an empty accessor pointing to a nullptr.
      */
-    Accessor3d() : Accessor3dC(nullptr, {}, {}, nullptr) {}
+    Accessor3d() : Accessor3dC(nullptr, {}, {}, nullptr, nullptr) {}
 
     /**
      * Creates the accessor with an already allocated storage space with a
      * stride.
      */
     Accessor3d(storage_type *storage, size_type stride0, size_type stride1,
-               arithmetic_type *scale)
-        : Accessor3dC(storage, stride0, stride1, scale)
+               arithmetic_type *scale, arithmetic_type *invscale)
+        : Accessor3dC(storage, stride0, stride1, scale, invscale)
     {}
 
     Accessor3dC to_const() const
     {
         return {this->storage_, this->stride_[0], this->stride_[1],
-                this->scale_};
+                this->scale_, this->invscale_};
     }
 
     /**
@@ -365,6 +388,7 @@ public:
         const auto stride1 = this->stride_[1];
         rest_storage[x * stride0 + y * stride1 + z] =
             static_cast<storage_type>(value / this->read_scale(x, z));
+        // static_cast<storage_type>(value * this->read_invscale(x, z));
     }
 
     /**
@@ -374,6 +398,7 @@ public:
     GKO_ATTRIBUTES void set_scale(IndexType x, IndexType z, arithmetic_type val)
     {
         arithmetic_type *GKO_RESTRICT rest_scale = this->scale_;
+        arithmetic_type *GKO_RESTRICT rest_invscale = this->invscale_;
         storage_type max_val = one<storage_type>();
         // printf("(A) max_val = %d\n", max_val);
         // if (std::is_integer<storage_type>::value) {
@@ -381,8 +406,14 @@ public:
             max_val = std::numeric_limits<storage_type>::max();
             //    printf("(B) max_val = %ld\n", max_val);
         }
+        // printf("max_val = %e , val = %e , %e , %e \n",
+        //        static_cast<arithmetic_type>(max_val), val,
+        //        val / static_cast<arithmetic_type>(max_val),
+        //        static_cast<arithmetic_type>(max_val) / val);
         rest_scale[x * this->stride_[1] + z] =
             val / static_cast<arithmetic_type>(max_val);
+        // rest_invscale[x * this->stride_[1] + z] =
+        //     static_cast<arithmetic_type>(max_val) / val;
         //    rest_scale[idx] = one<arithmetic_type>();
         //    printf("val = %10.5e , rest_scale = %10.5e\n", val,
         //    rest_scale[idx]); std::cout << val << " - " << rest_scale[idx] <<
@@ -392,6 +423,8 @@ public:
     GKO_ATTRIBUTES storage_type *get_storage() { return this->storage_; }
 
     GKO_ATTRIBUTES arithmetic_type *get_scale() { return this->scale_; }
+
+    GKO_ATTRIBUTES arithmetic_type *get_invscale() { return this->invscale_; }
 };
 
 
@@ -412,7 +445,8 @@ public:
     Accessor3dHelper(std::shared_ptr<const Executor> exec, dim<3> krylov_dim)
         : krylov_dim_{krylov_dim},
           bases_{exec, krylov_dim_[0] * krylov_dim_[1] * krylov_dim_[2]},
-          scale_{exec, krylov_dim_[0] * krylov_dim_[2]}
+          scale_{exec, krylov_dim_[0] * krylov_dim_[2]},
+          invscale_{exec, krylov_dim_[0] * krylov_dim_[2]}
     {
         // For testing, initialize scale to ones
         // Array<ValueType> h_scale{exec->get_master(), krylov_dim[0]};
@@ -422,13 +456,21 @@ public:
             h_scale.get_data()[i] = one<ValueType>();
         }
         scale_ = h_scale;
+
+        Array<ValueType> i_scale{exec->get_master(),
+                                 krylov_dim[0] * krylov_dim[2]};
+        for (size_type i = 0; i < i_scale.get_num_elems(); ++i) {
+            i_scale.get_data()[i] = one<ValueType>();
+        }
+        invscale_ = i_scale;
     }
 
     Accessor get_accessor()
     {
         const auto stride0 = krylov_dim_[1] * krylov_dim_[2];
         const auto stride1 = krylov_dim_[2];
-        return {bases_.get_data(), stride0, stride1, scale_.get_data()};
+        return {bases_.get_data(), stride0, stride1, scale_.get_data(),
+                invscale_.get_data()};
     }
 
     gko::Array<ValueTypeKrylovBases> &get_bases() { return bases_; }
@@ -437,6 +479,7 @@ private:
     dim<3> krylov_dim_;
     Array<ValueTypeKrylovBases> bases_;
     Array<ValueType> scale_;
+    Array<ValueType> invscale_;
 };
 
 
