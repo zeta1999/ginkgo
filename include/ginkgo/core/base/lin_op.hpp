@@ -747,7 +747,7 @@ public:                                                                \
  *     GKO_ENABLE_LIN_OP_FACTORY(MyLinOp, my_parameters, Factory) {
  *         // a factory parameter named "my_value", of type int and default
  *         // value of 5
- *         int GKO_FACTORY_PARAMETER(my_value, 5);
+ *         GKO_FACTORY_PARAMETER(my_value, int, 5);
  *     };
  *     // constructor needed by EnableLinOp
  *     explicit MyLinOp(std::shared_ptr<const Executor> exec) {
@@ -859,20 +859,19 @@ public:                                                                      \
  * Creates a factory parameter in the factory parameters structure.
  *
  * @param _name  name of the parameter
+ * @param _type  type of the parameter
  * @param __VA_ARGS__  default value of the parameter
  *
  * @see GKO_ENABLE_LIN_OP_FACTORY for more details, and usage example
  *
  * @ingroup LinOp
  */
-#define GKO_FACTORY_PARAMETER(_name, ...)                                    \
-    mutable _name{__VA_ARGS__};                                              \
+#define GKO_FACTORY_PARAMETER(_name, _type, ...)                             \
+    _type mutable _name{__VA_ARGS__};                                        \
                                                                              \
-    template <typename... Args>                                              \
-    auto with_##_name(decltype(_name) _value)                                \
+    auto with_##_name(_type _value)                                          \
         const->const ::gko::xstd::decay_t<decltype(*this)> &                 \
     {                                                                        \
-        using type = decltype(this->_name);                                  \
         this->_name = std::move(_value);                                     \
         return *this;                                                        \
     }                                                                        \

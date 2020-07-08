@@ -56,8 +56,8 @@ public:
         /**
          * Boolean set by the user to stop the iteration process
          */
-        std::add_pointer<volatile bool>::type GKO_FACTORY_PARAMETER(
-            stop_iteration_process, nullptr);
+        GKO_FACTORY_PARAMETER(stop_iteration_process,
+                              std::add_pointer<volatile bool>::type, nullptr);
     };
     GKO_ENABLE_CRITERION_FACTORY(ByInteraction, parameters, Factory);
     GKO_ENABLE_BUILD_METHOD(Factory);

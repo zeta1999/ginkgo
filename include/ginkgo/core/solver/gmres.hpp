@@ -147,20 +147,20 @@ public:
         /**
          * Preconditioner factory.
          */
-        std::shared_ptr<const LinOpFactory> GKO_FACTORY_PARAMETER(
-            preconditioner, nullptr);
+        GKO_FACTORY_PARAMETER(preconditioner,
+                              std::shared_ptr<const LinOpFactory>, nullptr);
 
         /**
          * Already generated preconditioner. If one is provided, the factory
          * `preconditioner` will be ignored.
          */
-        std::shared_ptr<const LinOp> GKO_FACTORY_PARAMETER(
-            generated_preconditioner, nullptr);
+        GKO_FACTORY_PARAMETER(generated_preconditioner,
+                              std::shared_ptr<const LinOp>, nullptr);
 
         /**
          * krylov dimension factory.
          */
-        size_type GKO_FACTORY_PARAMETER(krylov_dim, 0u);
+        GKO_FACTORY_PARAMETER(krylov_dim, size_type, 0u);
     };
     GKO_ENABLE_LIN_OP_FACTORY(Gmres, parameters, Factory);
     GKO_ENABLE_BUILD_METHOD(Factory);

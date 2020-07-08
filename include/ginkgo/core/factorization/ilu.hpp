@@ -100,15 +100,17 @@ public:
          * Strategy which will be used by the L matrix. The default value
          * `nullptr` will result in the strategy `classical`.
          */
-        std::shared_ptr<typename matrix_type::strategy_type>
-            GKO_FACTORY_PARAMETER(l_strategy, nullptr);
+        GKO_FACTORY_PARAMETER(
+            l_strategy, std::shared_ptr<typename matrix_type::strategy_type>,
+            nullptr);
 
         /**
          * Strategy which will be used by the U matrix. The default value
          * `nullptr` will result in the strategy `classical`.
          */
-        std::shared_ptr<typename matrix_type::strategy_type>
-            GKO_FACTORY_PARAMETER(u_strategy, nullptr);
+        GKO_FACTORY_PARAMETER(
+            u_strategy, std::shared_ptr<typename matrix_type::strategy_type>,
+            nullptr);
     };
     GKO_ENABLE_LIN_OP_FACTORY(Ilu, parameters, Factory);
     GKO_ENABLE_BUILD_METHOD(Factory);

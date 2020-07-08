@@ -300,7 +300,7 @@ public:
          *
          * @note This value has to be between 1 and 32 (NVIDIA)/64 (AMD).
          */
-        uint32 GKO_FACTORY_PARAMETER(max_block_size, 32u);
+        GKO_FACTORY_PARAMETER(max_block_size, uint32, 32u);
 
         /**
          * Stride between two columns of a block (as number of elements).
@@ -311,7 +311,7 @@ public:
          *       reference executor. The allowed value: 0, 64 for AMD and 0, 32
          *       for NVIDIA
          */
-        uint32 GKO_FACTORY_PARAMETER(max_block_stride, 0u);
+        GKO_FACTORY_PARAMETER(max_block_stride, uint32, 0u);
 
         /**
          * Starting (row / column) indexes of individual blocks.
@@ -338,7 +338,7 @@ public:
          *       has to be respected when setting this parameter. Failure to do
          *       so will lead to undefined behavior.
          */
-        gko::Array<index_type> GKO_FACTORY_PARAMETER(block_pointers, nullptr);
+        GKO_FACTORY_PARAMETER(block_pointers, gko::Array<index_type>, nullptr);
 
     private:
         // See documentation of storage_optimization parameter for details about
@@ -435,8 +435,8 @@ public:
          * If the non-adaptive version of Jacobi is used, the
          * `storage_optimization.block_wise` Array will be empty.
          */
-        storage_optimization_type GKO_FACTORY_PARAMETER(
-            storage_optimization, precision_reduction(0, 0));
+        GKO_FACTORY_PARAMETER(storage_optimization, storage_optimization_type,
+                              precision_reduction(0, 0));
 
         /**
          * The relative accuracy of the adaptive Jacobi variant.
@@ -464,7 +464,7 @@ public:
          * accuracy to a value as close as possible to `dropout` will result in
          * optimal memory savings, while not degrading the quality of solution.
          */
-        remove_complex<value_type> GKO_FACTORY_PARAMETER(accuracy, 1e-1);
+        GKO_FACTORY_PARAMETER(accuracy, remove_complex<value_type>, 1e-1);
     };
     GKO_ENABLE_LIN_OP_FACTORY(Jacobi, parameters, Factory);
     GKO_ENABLE_BUILD_METHOD(Factory);

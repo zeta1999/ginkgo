@@ -183,20 +183,20 @@ public:
         /**
          * Inner solver factory.
          */
-        std::shared_ptr<const LinOpFactory> GKO_FACTORY_PARAMETER(solver,
-                                                                  nullptr);
+        GKO_FACTORY_PARAMETER(solver, std::shared_ptr<const LinOpFactory>,
+                              nullptr);
 
         /**
          * Already generated solver. If one is provided, the factory `solver`
          * will be ignored.
          */
-        std::shared_ptr<const LinOp> GKO_FACTORY_PARAMETER(generated_solver,
-                                                           nullptr);
+        GKO_FACTORY_PARAMETER(generated_solver, std::shared_ptr<const LinOp>,
+                              nullptr);
 
         /**
          * Relaxation factor for Richardson iteration
          */
-        ValueType GKO_FACTORY_PARAMETER(relaxation_factor, value_type{1});
+        GKO_FACTORY_PARAMETER(relaxation_factor, ValueType, value_type{1});
     };
     GKO_ENABLE_LIN_OP_FACTORY(Ir, parameters, Factory);
     GKO_ENABLE_BUILD_METHOD(Factory);

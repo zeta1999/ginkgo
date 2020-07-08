@@ -111,8 +111,8 @@ public:
         /**
          * Preconditioner factory.
          */
-        std::shared_ptr<const LinOpFactory> GKO_FACTORY_PARAMETER(
-            preconditioner, nullptr);
+        GKO_FACTORY_PARAMETER(preconditioner,
+                              std::shared_ptr<const LinOpFactory>, nullptr);
 
         /**
          * Number of right hand sides.
@@ -123,7 +123,7 @@ public:
          *       sophisticated implementation. Hence this parameter is left
          *       here. But currently, there is no need to use it.
          */
-        gko::size_type GKO_FACTORY_PARAMETER(num_rhs, 1u);
+        GKO_FACTORY_PARAMETER(num_rhs, gko::size_type, 1u);
     };
     GKO_ENABLE_LIN_OP_FACTORY(LowerTrs, parameters, Factory);
     GKO_ENABLE_BUILD_METHOD(Factory);

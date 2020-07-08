@@ -132,15 +132,15 @@ public:
         /**
          * Preconditioner factory.
          */
-        std::shared_ptr<const LinOpFactory> GKO_FACTORY_PARAMETER(
-            preconditioner, nullptr);
+        GKO_FACTORY_PARAMETER(preconditioner,
+                              std::shared_ptr<const LinOpFactory>, nullptr);
 
         /**
          * Already generated preconditioner. If one is provided, the factory
          * `preconditioner` will be ignored.
          */
-        std::shared_ptr<const LinOp> GKO_FACTORY_PARAMETER(
-            generated_preconditioner, nullptr);
+        GKO_FACTORY_PARAMETER(generated_preconditioner,
+                              std::shared_ptr<const LinOp>, nullptr);
     };
     GKO_ENABLE_LIN_OP_FACTORY(Bicg, parameters, Factory);
     GKO_ENABLE_BUILD_METHOD(Factory);
