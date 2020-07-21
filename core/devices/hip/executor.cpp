@@ -64,4 +64,9 @@ int HipExecutor::num_execs[max_devices];
 std::mutex HipExecutor::mutex[max_devices];
 
 
+void HipMemorySpace::raw_copy_to(const CudaUVMSpace *mem_space,
+                                 size_type num_bytes, const void *src_ptr,
+                                 void *dest_ptr) const GKO_NOT_IMPLEMENTED;
+
+
 }  // namespace gko

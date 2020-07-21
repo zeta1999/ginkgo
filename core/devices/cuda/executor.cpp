@@ -67,4 +67,34 @@ unsigned CudaExecutor::num_execs[max_devices];
 std::mutex CudaExecutor::mutex[max_devices];
 
 
+void CudaMemorySpace::raw_copy_to(const CudaUVMSpace *dest_mem_space,
+                                  size_type n_bytes, const void *src_ptr,
+                                  void *dest_ptr) const GKO_NOT_IMPLEMENTED;
+
+
+void CudaUVMSpace::raw_copy_to(const CudaUVMSpace *dest_mem_space,
+                               size_type n_bytes, const void *src_ptr,
+                               void *dest_ptr) const GKO_NOT_IMPLEMENTED;
+
+
+void CudaUVMSpace::raw_copy_to(const CudaMemorySpace *dest_mem_space,
+                               size_type n_bytes, const void *src_ptr,
+                               void *dest_ptr) const GKO_NOT_IMPLEMENTED;
+
+
+void CudaUVMSpace::raw_copy_to(const HipMemorySpace *dest_mem_space,
+                               size_type n_bytes, const void *src_ptr,
+                               void *dest_ptr) const GKO_NOT_IMPLEMENTED;
+
+
+void HostMemorySpace::raw_copy_to(const CudaUVMSpace *dest_mem_space,
+                                  size_type n_bytes, const void *src_ptr,
+                                  void *dest_ptr) const GKO_NOT_IMPLEMENTED;
+
+
+void CudaUVMSpace::raw_copy_to(const HostMemorySpace *dest_mem_space,
+                               size_type n_bytes, const void *src_ptr,
+                               void *dest_ptr) const GKO_NOT_IMPLEMENTED;
+
+
 }  // namespace gko
