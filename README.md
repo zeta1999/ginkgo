@@ -31,7 +31,7 @@ reflect the current state of the library.
 Prerequisites
 -------------
 
-### Linux and Mac OS 
+### Linux and Mac OS
 
 For Ginkgo core library:
 
@@ -87,6 +87,12 @@ The Ginkgo CUDA module has the following __additional__ requirements:
 The Ginkgo OMP module has the following __additional__ requirements:
 *  _MinGW_ or _Cygwin_
 
+Need to add the following manually:
+* Test Ginkgo with shared Ginkgo library:
+  Add `PROJECT_BINARY_DIR/GINKGO_WINDOWS_SHARED_LIBRARY_RELPATH` into the environment `PATH`. `GINKGO_WINDOWS_SHARED_LIBRARY_RELPATH` is `windows_shared_library` by default. More Details are availble in the [Installation page](./INSTALL.md).
+* Build Ginkgo with Debug mode:
+  Add `\bigobj` in _Microsoft Visual Studio_ or `-Wa,-mbig-obj -O1` in _MinGW_, _Cygwin_ into complier flag.
+
 __NOTE:__ _Microsoft Visual Studio_ only supports OpenMP 2.0, so it can not compile the ginkgo OMP module.
 
 __NOTE:__ Some restrictions will also apply on the version of C and C++ standard
@@ -97,7 +103,7 @@ Quick Install
 
 ### Building Ginkgo
 
-To build Ginkgo, you can use the standard CMake procedure. 
+To build Ginkgo, you can use the standard CMake procedure.
 
 ```sh
 mkdir build; cd build
@@ -122,7 +128,7 @@ Ginkgo does comprehensive unit tests using Google Tests. These tests are enabled
 ### Running the benchmarks
 
 A unique feature of Ginkgo is the ability to run benchmarks and view your results
-with the help of the [Ginkgo Performance Explorer (GPE)](https://ginkgo-project.github.io/gpe/). 
+with the help of the [Ginkgo Performance Explorer (GPE)](https://ginkgo-project.github.io/gpe/).
 
 More details about this can be found in the [BENCHMARKING.md page](./BENCHMARKING.md)
 
