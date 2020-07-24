@@ -191,7 +191,6 @@ void conj_transpose(std::shared_ptr<const CudaExecutor> exec,
 
     kernel::conj_transpose<<<grid_dim, default_block_size>>>(
         size, as_cuda_type(orig_values), as_cuda_type(trans_values));
-    )
 }
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(
